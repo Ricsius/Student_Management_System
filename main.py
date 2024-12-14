@@ -1,7 +1,8 @@
 import sys
 import sqlite3
 from PyQt6.QtWidgets import QApplication, QMainWindow, QTableWidget, QTableWidgetItem, QDialog, \
-    QVBoxLayout, QLineEdit, QComboBox, QPushButton, QLabel, QToolBar, QStatusBar
+    QVBoxLayout, QLineEdit, QComboBox, QPushButton, QLabel, QToolBar, QStatusBar, QGridLayout, \
+    QMessageBox
 from PyQt6.QtGui import QAction, QIcon
 from PyQt6.QtCore import Qt
 
@@ -35,6 +36,16 @@ class DatabaseHandler():
         cursor = connection.cursor()
         cursor.execute("UPDATE students SET name = ?, course = ?, mobile = ? WHERE id = ?",
                        (new_name, new_course, new_mobile, id))
+        connection.commit()
+        cursor.close()
+        connection.close()
+
+    @classmethod
+    def delete_student(cls, id):
+        connection = sqlite3.connect(cls.database_path)
+        cursor = connection.cursor()
+        cursor.execute("DELETE FROM students WHERE id = ?",
+                       (id, ))
         connection.commit()
         cursor.close()
         connection.close()
@@ -241,9 +252,36 @@ class EditDialog(QDialog):
         self.close()
 
 
-
 class DeleteDialog(QDialog):
-    pass
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Delete Student Data")
+
+        index = main_window.table.currentRow()
+        self.student_id = main_window.table.item(index, 0).text()
+
+        layout = QGridLayout()
+        confirmation = QLabel("Are you sure you want to delete?")
+        yes = QPushButton("Yes")
+        yes.clicked.connect(self.delete_student)
+        no = QPushButton("No")
+        no.clicked.connect(lambda: self.close())
+
+        layout.addWidget(confirmation, 0, 0, 1, 2)
+        layout.addWidget(yes, 1, 0)
+        layout.addWidget(no, 1, 1)
+
+        self.setLayout(layout)
+
+    def delete_student(self):
+        DatabaseHandler.delete_student(self.student_id)
+        main_window.load_data()
+        self.close()
+
+        confirmation_widget = QMessageBox()
+        confirmation_widget.setWindowTitle("Success")
+        confirmation_widget.setText("The record was deleted successfully!")
+        confirmation_widget.exec()
 
 app = QApplication(sys.argv)
 main_window = MainWindow()
