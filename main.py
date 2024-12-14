@@ -5,7 +5,29 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QTableWidget, QTableWidge
 from PyQt6.QtGui import QAction
 from PyQt6.QtCore import Qt
 
-DATABASE_PATH = "database.db"
+class DatabaseHandler():
+    database_path = "database.db"
+
+    @classmethod
+    def get_all_students(cls):
+        connection = sqlite3.connect(cls.database_path)
+
+        result = connection.execute("SELECT * FROM students")
+        result = list(result)
+
+        connection.close()
+
+        return result
+    
+    @classmethod
+    def insert_student(cls, name, course, mobile):
+        connection = sqlite3.connect(cls.database_path)
+        cursor = connection.cursor()
+        cursor.execute("INSERT INTO students (name, course, mobile) VALUES (?, ?, ?)",
+                       (name, course, mobile))
+        connection.commit()
+        cursor.close()
+        connection.close()
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -35,8 +57,7 @@ class MainWindow(QMainWindow):
         self.load_data()
 
     def load_data(self):
-        connection = sqlite3.connect(DATABASE_PATH)
-        result = connection.execute("SELECT * FROM students")
+        result = DatabaseHandler.get_all_students()
             
         self.table.setRowCount(0)
 
@@ -45,8 +66,6 @@ class MainWindow(QMainWindow):
 
             for column_number, data in enumerate(row_data):
                 self.table.setItem(row_number, column_number, QTableWidgetItem(str(data)))
-
-        connection.close()
 
     def insert(self):
         dialog = InsertDialog()
@@ -96,13 +115,7 @@ class InsertDialog(QDialog):
             self.error_label.setText("Invalid data!")
             return
 
-        connection = sqlite3.connect(DATABASE_PATH)
-        cursor = connection.cursor()
-        cursor.execute("INSERT INTO students (name, course, mobile) VALUES (?, ?, ?)",
-                       (name, course, mobile))
-        connection.commit()
-        cursor.close()
-        connection.close()
+        DatabaseHandler.insert_student(name, course, mobile)
         main_window.load_data()
         self.close()
 
