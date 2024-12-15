@@ -1,5 +1,6 @@
 import sys
-import sqlite3
+import os
+import mysql.connector
 from PyQt6.QtWidgets import QApplication, QMainWindow, QTableWidget, QTableWidgetItem, QDialog, \
     QVBoxLayout, QLineEdit, QComboBox, QPushButton, QLabel, QToolBar, QStatusBar, QGridLayout, \
     QMessageBox
@@ -7,13 +8,18 @@ from PyQt6.QtGui import QAction, QIcon
 from PyQt6.QtCore import Qt
 
 class DatabaseHandler():
-    database_path = "database.db"
+    host = "localhost"
+    user = "root"
+    password = os.getenv("MySQL_Root_Password")
+    database = "school"
 
     @classmethod
     def get_all_students(cls):
-        connection = sqlite3.connect(cls.database_path)
-
-        result = connection.execute("SELECT * FROM students")
+        connection = mysql.connector.connect(host=cls.host, user=cls.user, password=cls.password, database=cls.database)
+        cursor = connection.cursor()
+        cursor.execute("SELECT * FROM students")
+        
+        result = cursor.fetchall()
         result = list(result)
 
         connection.close()
@@ -22,9 +28,9 @@ class DatabaseHandler():
     
     @classmethod
     def insert_student(cls, name, course, mobile):
-        connection = sqlite3.connect(cls.database_path)
+        connection = mysql.connector.connect(host=cls.host, user=cls.user, password=cls.password, database=cls.database)
         cursor = connection.cursor()
-        cursor.execute("INSERT INTO students (name, course, mobile) VALUES (?, ?, ?)",
+        cursor.execute("INSERT INTO students (name, course, mobile) VALUES (%s, %s, %s)",
                        (name, course, mobile))
         connection.commit()
         cursor.close()
@@ -32,9 +38,9 @@ class DatabaseHandler():
 
     @classmethod
     def update_student(cls, id, new_name, new_course, new_mobile):
-        connection = sqlite3.connect(cls.database_path)
+        connection = mysql.connector.connect(host=cls.host, user=cls.user, password=cls.password, database=cls.database)
         cursor = connection.cursor()
-        cursor.execute("UPDATE students SET name = ?, course = ?, mobile = ? WHERE id = ?",
+        cursor.execute("UPDATE students SET name = %s, course = %s, mobile = %s WHERE id = %s",
                        (new_name, new_course, new_mobile, id))
         connection.commit()
         cursor.close()
@@ -42,9 +48,9 @@ class DatabaseHandler():
 
     @classmethod
     def delete_student(cls, id):
-        connection = sqlite3.connect(cls.database_path)
+        connection = mysql.connector.connect(host=cls.host, user=cls.user, password=cls.password, database=cls.database)
         cursor = connection.cursor()
-        cursor.execute("DELETE FROM students WHERE id = ?",
+        cursor.execute("DELETE FROM students WHERE id = %s",
                        (id, ))
         connection.commit()
         cursor.close()
